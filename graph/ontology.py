@@ -1,13 +1,13 @@
 from neo4j import GraphDatabase
 
-class OntologyGragh:
+class OntologyGraph:
     def __init__(self, uri, user, password):
         self.driver = GraphDatabase.driver(uri,auth=(user,password))
 
     def close(self):
         self.driver.close()
 
-    def get_impacted(self, changedconcepts):
+    def get_impacted_rules(self, changedconcepts):
         query="""
         MATCH (changed:Concept {name: $concept})<-[:DEPENDS_ON*0..5]-(downstream:Concept)<-[:REFERENCES]-(rule:Rule)
         RETURN DISTINCT
