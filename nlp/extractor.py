@@ -3,11 +3,11 @@ import anthropic, json
 class ClauseExtractor:
     def __init__(self, api):
         self.client = anthropic.Anthropic(api_key=api)
-
-    def extract(self, old, new) -> dict:
-        prompt = f"""You are analyzing two versions of a financial regualtion clause. 
-                    OLD Version: {old}
-                    NEW Version: {new}
+    
+    def extract(self, old_clause: str, new_clause: str) -> dict:
+        prompt = f"""You are analyzing two versions of a financial regulation clause. 
+                    OLD Version: {old_clause}
+                    NEW Version: {new_clause}
                     Return only correct JSON with these field:
                     {{
                         "change_type": "capital_requirement|reporting_obligation|product_restriction|definition_change|timeline_change|threshold_change",
@@ -18,7 +18,39 @@ class ClauseExtractor:
                         "magnitude": "high|medium|low"
                     }}
                     """
-        res = self.client.messages.create(model = "claude-sonnet-4-6", max_tokens= 1000, messages=[{"role": "user", "content": prompt}])
+        res = self.client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = res.content[0].text
+        raw = raw.replace("```json", "").replace("```", "").strip()
+        return json.loads(raw)
+
+    def extract_concepts(self, document_title: str) -> dict:
+        prompt = f"""
+        You are analyzing a financial regulatory document title.
+        
+        DOCUMENT: {document_title}
+        
+        Return only correct JSON with these fields:
+        {{
+            "concepts": [
+                {{"name": "ConceptName", "description": "what this concept is"}}
+            ],
+            "dependencies": [
+                {{"from": "ConceptA", "to": "ConceptB"}}
+            ],
+            "rule_type": "capital_requirement|reporting_obligation|product_restriction|conduct_rule"
+        }}
+        Extract the key regulatory concepts this document touches and their dependencies.
+        Return only valid JSON, no markdown.
+        """
+        res = self.client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
         raw = res.content[0].text
         raw = raw.replace("```json", "").replace("```", "").strip()
         return json.loads(raw)

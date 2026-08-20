@@ -1,16 +1,21 @@
 import httpx, json
 from datetime import datetime, timedelta
+import os 
+from dotenv import load_dotenv
+load_dotenv(dotenv_path="../.env")
+
 
 class RegulationsFetch:
     def __init__(self):
         self.url = "https://api.regulations.gov/v4/documents"
         self.agencies =["SEC", "CFTC", "TREAS", "FEDERALRESERVE"]
+        self.api_key = os.getenv("REGULATIONS_API_KEY")
 
 
     #Hits the Fed Register API and asks for any new rules posted with certain days previously, and formats date
     def getdocs(self, daysprev = 1):
         sincetime = (datetime.now() - timedelta(daysprev)).strftime("%Y-%m-%d")
-        param = {"filter[documentType]" : "Rule", "filter[postedDate][ge]": sincetime, "filter[agencyId]": ",".join(self.agencies), "sort": "-postedDate", "api_key": "tLLBrFko3AnYigrPbKcGp6FLOrBVrkNeUgjVKKIR"}
+        param = {"filter[documentType]" : "Rule", "filter[postedDate][ge]": sincetime, "filter[agencyId]": ",".join(self.agencies), "sort": "-postedDate", "api_key": self.api_key}
 
         response = httpx.get(self.url, params=param)
         return response.json()

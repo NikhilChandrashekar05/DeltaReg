@@ -1,9 +1,18 @@
 import json, psycopg2
+import os
+from dotenv import load_dotenv
+load_dotenv(dotenv_path="../.env")
 
 #Opens connection to the PostgreSQL DB and creates cursor to run SQL queries
 class Portfolio:
     def __init__(self):
-        self.conn = psycopg2.connect(host="localhost", port=5432, database="deltareg", user="deltareg", password="deltareg123")
+        self.conn = psycopg2.connect(
+            host=os.getenv("POSTGRES_HOST"),
+            port=os.getenv("POSTGRES_PORT"),
+            database=os.getenv("POSTGRES_DB"),
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD")
+        )
         self.cursor = self.conn.cursor()
 
     #Creates positions table if not there, each row would be 1 trading position a bank hold.
@@ -38,18 +47,23 @@ class Portfolio:
         self.conn.commit()
 
     def get_impacted_positions(self, affected_instruments: list) -> list:
-        self.cursor.execute(""" SELECT 
-                position_id,
-                instrument_type,
-                jurisdiction,
-                notional,
-                business_line,
-                current_rwa,
-                current_capital
+        normalized = []
+        for inst in affected_instruments:
+            normalized.append(inst.lower().replace(" ", "_").rstrip("s"))
+        
+        self.cursor.execute("""
+            SELECT 
+                position_id, instrument_type, jurisdiction, notional,
+                business_line, current_rwa, current_capital
             FROM positions
-            WHERE instrument_type = ANY(%s) """, (affected_instruments,))
+            WHERE EXISTS (
+                SELECT 1 FROM unnest(%s::text[]) AS term
+                WHERE positions.instrument_type ILIKE '%%' || term || '%%'
+                   OR term ILIKE '%%' || positions.instrument_type || '%%'
+            )
+        """, (normalized,))
+        
         rows = self.cursor.fetchall()
-
         results = []
         for row in rows:
             results.append({
