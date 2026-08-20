@@ -36,7 +36,7 @@ class RegulatoryParse():
         for i, new_embedd in enumerate(newembedd):
             score = cosine_similarity([new_embedd], oldembedd)[0]
             best = max(score)
-            if best < 0.92:
+            if best < 0.98:
                 changed.append({"new_clause": new_clause[i], "similarity_score": round(float(best), 4), "status": "changed" if best > 0.70 else "new"})
         return changed
 
