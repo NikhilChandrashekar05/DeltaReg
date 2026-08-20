@@ -7,7 +7,7 @@ from nlp.extractor import ClauseExtractor
 from graph.ontology import OntologyGraph
 from dotenv import load_dotenv
 load_dotenv()
-import time
+#import time
 
 class DeltaRegPipeline:
     def __init__(self):
