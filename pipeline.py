@@ -45,7 +45,7 @@ class DeltaRegPipeline:
             self.graph.add_reference(doc["id"], concept["name"])
 
     def run(self, days_back: int = 30):
-        start = time.time()
+        #start = time.time()
         print("Fetching regulatory documents...")
         raw = self.fetcher.getdocs(daysprev=days_back)
         docs = self.fetcher.parse(raw)
@@ -58,9 +58,9 @@ class DeltaRegPipeline:
                 print(f"  Failed: {e}")
                 continue
 
-        elapsed = time.time() - start
-        print(f"\nPipeline complete. Processed {len(docs)} documents in {elapsed:.1f}s")
-        print(f"Average: {elapsed/len(docs):.1f}s per document")
+        # elapsed = time.time() - start
+        # print(f"\nPipeline complete. Processed {len(docs)} documents in {elapsed:.1f}s")
+        # print(f"Average: {elapsed/len(docs):.1f}s per document")
         self.graph.close()
         print("\nPipeline complete.")
     
