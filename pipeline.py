@@ -5,13 +5,20 @@ from ingestion.fetcher import RegulationsFetch
 from nlp.parser import RegulatoryParse
 from nlp.extractor import ClauseExtractor
 from graph.ontology import OntologyGraph
+from dotenv import load_dotenv
+load_dotenv()
+import time
 
 class DeltaRegPipeline:
     def __init__(self):
         self.fetcher = RegulationsFetch()
         self.parser = RegulatoryParse()
-        self.extractor = ClauseExtractor(api=os.environ.get("ANTHROPIC_API_KEY"))
-        self.graph = OntologyGraph("bolt://localhost:7687", "neo4j", "test1234")
+        self.extractor = ClauseExtractor(api=os.getenv("ANTHROPIC_API_KEY"))
+        self.graph = OntologyGraph(
+        os.getenv("NEO4J_URI"),
+        os.getenv("NEO4J_USER"),
+        os.getenv("NEO4J_PASSWORD")
+)
     
     def process_document(self, doc: dict):
         print(f"\nProcessing: [{doc['agency']}] {doc['title']}")
@@ -38,6 +45,7 @@ class DeltaRegPipeline:
             self.graph.add_reference(doc["id"], concept["name"])
 
     def run(self, days_back: int = 30):
+        start = time.time()
         print("Fetching regulatory documents...")
         raw = self.fetcher.getdocs(daysprev=days_back)
         docs = self.fetcher.parse(raw)
@@ -47,12 +55,15 @@ class DeltaRegPipeline:
             try:
                 self.process_document(doc)
             except Exception as e:
-                print(f"  ! Failed: {e}")
+                print(f"  Failed: {e}")
                 continue
-        
+
+        elapsed = time.time() - start
+        print(f"\nPipeline complete. Processed {len(docs)} documents in {elapsed:.1f}s")
+        print(f"Average: {elapsed/len(docs):.1f}s per document")
         self.graph.close()
         print("\nPipeline complete.")
     
 if __name__ == "__main__":
     pipeline = DeltaRegPipeline()
-    pipeline.run(days_back=30)
+    pipeline.run(days_back=365)
